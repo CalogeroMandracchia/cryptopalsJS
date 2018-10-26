@@ -1,0 +1,23 @@
+{
+  "name": "cryptopalsjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "tools.js",
+  "dependencies": {
+    "rangex": "^1.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CalogeroMandracchia/cryptopalsJS.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CalogeroMandracchia/cryptopalsJS/issues"
+  },
+  "homepage": "https://github.com/CalogeroMandracchia/cryptopalsJS#readme"
+}

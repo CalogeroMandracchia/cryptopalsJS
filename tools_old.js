@@ -79,17 +79,9 @@ const sortReadable = input => {
 }
 
 const XOR_key = (input, key) => {
-    const res = [];
-    for(const line of splitArray(input, key.length)) {
-        let temp;
-        if(line.length == key.length) {
-            temp = XOR_buffers(line, key);
-        } else {
-            temp = XOR_buffers(line, key.slice(0, line.length));
-        }
-        res.push(temp.toString('hex'));
-    }
-    return Buffer.from(res.join(''), 'hex');
+    const listTest = generateTestBuffer(key, input[0].length);
+    const xored = XOR_listBuffers(input, listTest);
+    return xored;
 }
 
 const hexToBin = hex => {
@@ -123,22 +115,14 @@ const hammingDistance = (input1, input2) => {
     return res.reduce( (a,b) => a += b);
 }
 
-const splitArray = (list, chunkSize) => {
-    try {
-        return new Array(Math.ceil(list.length / chunkSize))
-        .fill()
-        .map((_,i) => list.slice(i*chunkSize,i*chunkSize+chunkSize));
-    } catch(err) {
-        console.log(err);
-    }
-}
+const splitArray = (list, chunkSize) => new Array(Math.ceil(list.length / chunkSize)).fill().map((_,i) => list.slice(i*chunkSize,i*chunkSize+chunkSize))
 
 const tranposeArray = arr => {
     const transposed= [];
     for(const index of range(arr[0].length)) {
         const temp = []
         for(const array of arr) {
-            if(array[index] != undefined) {
+            if(array[index]) {
                 temp.push((array[index]));
             }
         }
