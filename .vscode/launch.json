@@ -5,28 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Attach (Remote Debug)",
-            "type": "python",
-            "request": "attach",
-            "port": 5678,
-            "host": "localhost",
-            "args": [
-                "-b",
-                "-fC:/Users/cmandracchia/Desktop/cryptopalsJS/Set_1/6.txt"
-            ]
-        },
-        {
-            "name": "Python: Terminal (integrated)",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "args": [
-                "-b",
-                "-fC:/Users/cmandracchia/Desktop/cryptopalsJS/Set_1/6.txt"
-            ]
-        },
-        {
             "type": "node",
             "request": "launch",
             "name": "Launch Program",

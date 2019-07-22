@@ -1,15 +1,30 @@
+
 const range = require('rangex');
 
-const prova = [ [1,2,3], [4,5,6], [7,8,9], [10, 11, 12], [13, 14]];
-console.log("prova", prova);
-const transposed= [];
-for(const index of range(prova[0].length)) {
-    const temp = []
-    for(const array of prova) {
-        if(array[index]) {
-            temp.push((array[index]));
+const chunks = [ 
+    Buffer.from("00010203", "hex"),
+    Buffer.from("04050607", "hex"),
+    Buffer.from("08090a0b", "hex")
+];
+
+const transposeBlocks = chunks => {
+    const tr = [...range(chunks[0].length)].map( _ => [Buffer.alloc(chunks.length)]);
+    for(let i=0; i<chunks.length; i++) {
+        for(let n=0; n<chunks[i].length; n++) {
+            console.log("n", tr[n][0]);
+
+
+            const old = Buffer.from(tr[n][0], 'hex');
+            
+            const nuevo = Buffer.alloc(1, chunks[i][n], 'hex');
+
+
+            console.log("old", old);
+            console.log("new", nuevo);
+            tr[n] = Buffer.concat([old, nuevo]);
         }
     }
-    transposed.push(temp);
+    return tr;
 }
-console.log("tr", transposed);
+
+console.log(transposeBlocks(chunks));
