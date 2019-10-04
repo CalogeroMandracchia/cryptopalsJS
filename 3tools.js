@@ -6,6 +6,7 @@ const { promisify } = require('util');
 const range = require('rangex');
 
 const readFilefy = promisify(readFile);
+const randomBytesfy = promisify(crypto.randomBytes);
 
 const XOR_buffers = (buffer1, buffer2) => {
     const xored = Buffer.alloc(buffer1.length, 0, 'hex');
@@ -108,6 +109,7 @@ const decipher_aes_128_ecb = (cipherText, key, iv=null) => {
 const cipher_aes_128_ecb = (clearText, key, iv=null) => {
     try {
         const cipher = crypto.createCipheriv('aes-128-ecb', key, iv);
+        cipher.setAutoPadding(false);
         const cleartext = Buffer.concat([cipher.update(clearText), cipher.final()]);
         return cleartext;
     } catch (err) {
@@ -126,6 +128,75 @@ const PKCS7 = (block, totalDimension) => {
     }
 }
 
+const decipher_aes_128_cbc = (cipherText, key, iv=null) => {
+    try {
+        const cipherTextChunks = chunkBuffer(cipherText, 16);
+        const clearText = [];
+        for(const index of cipherTextChunks.keys()) {
+            if(index == 0) {
+                const maybeXored = decipher_aes_128_ecb(cipherTextChunks[index], key);
+                const clearTextChunk = iv != null ? XOR_buffers(maybeXored, iv) : maybeXored;
+                clearText.push(clearTextChunk);
+                continue;
+            }
+            const xored = decipher_aes_128_ecb(cipherTextChunks[index], key);
+            const clearTextChunk = XOR_buffers(xored, cipherTextChunks[index - 1])
+            clearText.push(clearTextChunk);
+        }
+        return Buffer.concat(clearText);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+const cipher_aes_128_cbc = (clearText, key, iv=null) => {
+    try {
+        const clearTextChunks = chunkBuffer(clearText, 16);
+        const cipherText = [];
+        for(const index of clearTextChunks.keys()) {
+            if(index == 0) {
+                const maybeXored = cipher_aes_128_ecb(clearTextChunks[index], key);
+                const cipherTextChunk = iv != null ? XOR_buffers(maybeXored, iv) : maybeXored;
+                cipherText.push(cipherTextChunk);
+                continue;
+            }
+            const xored = XOR_buffers(cipherText[cipherText.length - 1], clearTextChunks[index])
+            const ecb = cipher_aes_128_ecb(xored, key);
+            cipherText.push(ecb);
+        }
+        return Buffer.concat(cipherText);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+const random = async (minimum, maximum) => {
+    try {
+        const distance = maximum - minimum;
+	
+        if(distance <= 0) throw new Error('low range is greater than high range');
+        if(distance > 281474976710655) throw new Error('range is greater than 256^6-1');
+        if(maximum > Number.MAX_SAFE_INTEGER) throw new Error('bigger than Number.MAX_SAFE_INTEGER');
+    
+        const getNumbers = distance => {
+            if(distance < 256) return [1, 256];
+            if(distance < 65536) return [2, 65536];
+            if(distance < 16777216) return [3, 16777216];
+            if(distance < 4294967296) return [4, 4294967296];
+            if(distance < 1099511627776) return [5, 1099511627776];
+            return [6, 281474976710656];
+        }
+
+        const [ maxBytes, maxDec ] = getNumbers(distance);
+        const randomBytes = await randomBytesfy(maxBytes);
+        const randomHex = parseInt(randomBytes.toString('hex'), 16);
+        const result = Math.floor(randomHex / maxDec * (maximum - minimum+1) + minimum);
+        return result > maximum ? high : result;
+    } catch(error) {
+        console.log(error);
+    }
+}
+
 
 module.exports = {
     XOR_buffers,
@@ -139,5 +210,9 @@ module.exports = {
     transposeBlocks,
     PKCS7,
     decipher_aes_128_ecb,
-    cipher_aes_128_ecb
+    cipher_aes_128_ecb,
+    decipher_aes_128_cbc,
+    cipher_aes_128_cbc,
+    random,
+    range
 }
