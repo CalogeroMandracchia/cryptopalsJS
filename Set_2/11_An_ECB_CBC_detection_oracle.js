@@ -1,6 +1,6 @@
 'use strict';
 
-const { encryption_oracle, detect_AES_ECB, range } = require('../3tools');
+const { encryption_oracle_ECB_CBC, detect_AES_ECB, range } = require('../3tools');
 
 
 const main = _ => {
@@ -9,7 +9,7 @@ const main = _ => {
         
         let ecb = 0;
         for(const _ of range(500)) {
-            const cipherText = encryption_oracle(clearText);
+            const cipherText = encryption_oracle_ECB_CBC(clearText);
             if(detect_AES_ECB(cipherText)) {
                 ecb++;
             }

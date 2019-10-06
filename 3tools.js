@@ -211,15 +211,23 @@ const detect_AES_ECB = buffer => {
     }
 }
 
-const encryption_oracle = (clearText) => {
+const encryption_oracle_ECB_CBC = (clearText, random_AES_key = randomBytes(16)) => {
     try {
-    const random_AES_key = randomBytes(16);
     const clearTextRandom = Buffer.concat([randomBytes(random(5, 10)), clearText, randomBytes(random(5, 10))]);
     const clearTextPadded = PKCS7(clearTextRandom, 16);
 
     return random(0, 1) ?
         cipher_aes_128_ecb(clearTextPadded, random_AES_key) :
         cipher_aes_128_cbc(clearTextPadded, random_AES_key, randomBytes(16));
+    } catch (error) {
+        throw error;
+    }
+}
+
+const encryption_oracle_ECB = (clearText, random_AES_key = randomBytes(16)) => {
+    try {
+    const clearTextPadded = PKCS7(clearText, 16);
+    return cipher_aes_128_ecb(clearTextPadded, random_AES_key);
     } catch (error) {
         throw error;
     }
@@ -243,5 +251,6 @@ module.exports = {
     random,
     range,
     detect_AES_ECB,
-    encryption_oracle
+    encryption_oracle_ECB_CBC,
+    encryption_oracle_ECB
 }
