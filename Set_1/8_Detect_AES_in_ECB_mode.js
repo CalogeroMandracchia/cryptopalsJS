@@ -1,18 +1,18 @@
 'use strict';
 
-const { readFilefy } = require('../3tools');
+const { readFilefy, detect_AES_ECB } = require('../3tools');
 
 
 const main = async _ => {
     try {
-        const hex = await readFilefy('./8.txt', 'utf8');
-        const chunks = hex.replace(/\n/g, '').match(/.{1,32}/g);
-        const unique = new Set(chunks);
-        if(chunks.length != unique.size)
-            console.log(`aes-128-ecb detected`);
+        const rawHex = await readFilefy('./8.txt', 'utf8');
+        const hex = Buffer.from(rawHex.replace(/\n/g, ''), 'hex');
+        const duplicates = detect_AES_ECB(hex);
+        duplicates.length > 0 ? console.log(`aes-128-ecb detected`) : console.log(`aes-128-ecb not detected`);
     } catch (err) {
         console.log(err);
     }
 }
+
 
 main();

@@ -1,12 +1,12 @@
 'use strict';
 
-const crypto = require('crypto');
+const { randomBytes, createDecipheriv, createCipheriv } = require('crypto');
 const { readFile } = require('fs');
 const { promisify } = require('util');
 const range = require('rangex');
 
 const readFilefy = promisify(readFile);
-const randomBytesfy = promisify(crypto.randomBytes);
+const randomBytesfy = promisify(randomBytes);
 
 const XOR_buffers = (buffer1, buffer2) => {
     const xored = Buffer.alloc(buffer1.length, 0, 'hex');
@@ -97,7 +97,7 @@ const transposeBlocks = chunks => {
 
 const decipher_aes_128_ecb = (cipherText, key, iv=null) => {
     try {
-        const decipher = crypto.createDecipheriv('aes-128-ecb', key, iv);
+        const decipher = createDecipheriv('aes-128-ecb', key, iv);
         decipher.setAutoPadding(false);
         const cleartext = Buffer.concat([decipher.update(cipherText), decipher.final()]);
         return cleartext;
@@ -108,7 +108,7 @@ const decipher_aes_128_ecb = (cipherText, key, iv=null) => {
 
 const cipher_aes_128_ecb = (clearText, key, iv=null) => {
     try {
-        const cipher = crypto.createCipheriv('aes-128-ecb', key, iv);
+        const cipher = createCipheriv('aes-128-ecb', key, iv);
         cipher.setAutoPadding(false);
         const cleartext = Buffer.concat([cipher.update(clearText), cipher.final()]);
         return cleartext;
@@ -117,14 +117,15 @@ const cipher_aes_128_ecb = (clearText, key, iv=null) => {
     }
 }
 
-const PKCS7 = (block, totalDimension) => {
+const PKCS7 = (clearText, blockDimension) => {
     try {
-        const padDimension = totalDimension - block.length;
-        const pad = Buffer.alloc(padDimension, padDimension, 'ascii');
-        const padded = Buffer.concat([block, pad]);
+        if(blockDimension >= 256) throw error("block dimension is bigger than 255 byte");
+        const padLength = blockDimension - clearText.length % blockDimension;
+        const pad = Buffer.alloc(padLength, padLength, 'ascii');
+        const padded = Buffer.concat([clearText, pad]);
         return padded;
-    } catch (err) {
-        console.log(err);
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -170,7 +171,7 @@ const cipher_aes_128_cbc = (clearText, key, iv=null) => {
     }
 }
 
-const random = async (minimum, maximum) => {
+const random = (minimum, maximum) => {
     try {
         const distance = maximum - minimum;
 	
@@ -188,15 +189,41 @@ const random = async (minimum, maximum) => {
         }
 
         const [ maxBytes, maxDec ] = getNumbers(distance);
-        const randomBytes = await randomBytesfy(maxBytes);
-        const randomHex = parseInt(randomBytes.toString('hex'), 16);
-        const result = Math.floor(randomHex / maxDec * (maximum - minimum+1) + minimum);
-        return result > maximum ? high : result;
+        const randomHex = parseInt(randomBytes(maxBytes).toString('hex'), 16);
+        const result = Math.floor(randomHex / maxDec * (maximum - minimum + 1) + minimum);
+        return result > maximum ? maximum : result;
     } catch(error) {
         console.log(error);
     }
 }
 
+const detect_AES_ECB = buffer => {
+    try {
+        const map = new Map();
+        const duplicates = [];
+        for(const chunk of chunkBuffer(buffer, 16)) {
+            const strChunk = chunk.toString('hex');
+            map.has(strChunk) ? duplicates.push(strChunk) : map.set(strChunk, true);
+        }
+        return duplicates.length > 0 ? duplicates : false;
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+const encryption_oracle = (clearText) => {
+    try {
+    const random_AES_key = randomBytes(16);
+    const clearTextRandom = Buffer.concat([randomBytes(random(5, 10)), clearText, randomBytes(random(5, 10))]);
+    const clearTextPadded = PKCS7(clearTextRandom, 16);
+
+    return random(0, 1) ?
+        cipher_aes_128_ecb(clearTextPadded, random_AES_key) :
+        cipher_aes_128_cbc(clearTextPadded, random_AES_key, randomBytes(16));
+    } catch (error) {
+        throw error;
+    }
+}
 
 module.exports = {
     XOR_buffers,
@@ -214,5 +241,7 @@ module.exports = {
     decipher_aes_128_cbc,
     cipher_aes_128_cbc,
     random,
-    range
+    range,
+    detect_AES_ECB,
+    encryption_oracle
 }
